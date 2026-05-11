@@ -1,0 +1,8 @@
+﻿target/
+*.class
+.env
+src/main/resources/firebase-service-account.json
+logs/
+.idea/
+*.iml
+*.log
