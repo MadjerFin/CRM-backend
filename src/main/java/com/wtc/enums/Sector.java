@@ -1,0 +1,6 @@
+package com.wtc.enums;
+
+public enum Sector {
+    FINANCEIRO, INDUSTRIAL, COMERCIO, TECNOLOGIA,
+    SAUDE, EDUCACAO, SERVICOS, AGRONEGOCIO, OUTROS
+}
