@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 
 @Data
 public class ClientRequest {
-    public Long userId;
-    public Long segmentId;
+    public String userId;
+    public String segmentId;
     public String tags;
     public BigDecimal score;
     public ClientStatus status;

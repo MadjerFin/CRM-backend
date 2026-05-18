@@ -1,21 +1,17 @@
 package com.wtc.repository;
 
 import com.wtc.entity.Message;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface MessageRepository extends JpaRepository<Message, Long> {
+public interface MessageRepository extends MongoRepository<Message, String> {
 
-    @Query("SELECT m FROM Message m WHERE " +
-           "(m.sender.id = :userId OR m.receiver.id = :userId) " +
-           "ORDER BY m.sentAt DESC")
-    List<Message> findConversation(@Param("userId") Long userId);
+    @Query("{ $or: [ { 'senderId': ?0 }, { 'receiverId': ?0 } ] }")
+    List<Message> findConversation(String userId);
 
-    List<Message> findByReceiverIdOrderBySentAtDesc(Long receiverId);
-
-    List<Message> findBySegmentIdOrderBySentAtDesc(Long segmentId);
+    List<Message> findByReceiverIdOrderBySentAtDesc(String receiverId);
+    List<Message> findBySegmentIdOrderBySentAtDesc(String segmentId);
 }

@@ -1,8 +1,8 @@
 package com.wtc.repository;
 
 import com.wtc.entity.Campaign;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CampaignRepository extends JpaRepository<Campaign, Long> {}
+public interface CampaignRepository extends MongoRepository<Campaign, String> {}

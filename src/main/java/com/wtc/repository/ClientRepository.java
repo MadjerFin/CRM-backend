@@ -2,30 +2,30 @@ package com.wtc.repository;
 
 import com.wtc.entity.Client;
 import com.wtc.enums.ClientStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ClientRepository extends JpaRepository<Client, Long> {
+public interface ClientRepository extends MongoRepository<Client, String> {
 
-    Optional<Client> findByUserId(Long userId);
-    List<Client> findBySegmentId(Long segmentId);
+    Optional<Client> findByUserId(String userId);
+    List<Client> findBySegmentId(String segmentId);
     List<Client> findByStatus(ClientStatus status);
 
-    @Query("SELECT c FROM Client c WHERE " +
-           "(:status IS NULL OR c.status = :status) AND " +
-           "(:segmentId IS NULL OR c.segment.id = :segmentId) AND " +
-           "(:tag IS NULL OR c.tags LIKE %:tag%)")
-    List<Client> findWithFilters(@Param("status") ClientStatus status,
-                                 @Param("segmentId") Long segmentId,
-                                 @Param("tag") String tag);
+    @Query("{ $and: [ " +
+           "{ $or: [ { 'status': null }, { 'status': ?0 } ] }, " +
+           "{ $or: [ { 'segmentId': null }, { 'segmentId': ?1 } ] }, " +
+           "{ $or: [ { 'tags': null }, { 'tags': { $regex: ?2, $options: 'i' } } ] } " +
+           "] }")
+    List<Client> findWithFilters(ClientStatus status, String segmentId, String tag);
 
-    @Query("SELECT c FROM Client c WHERE " +
-           "LOWER(c.user.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
-           "LOWER(c.user.email) LIKE LOWER(CONCAT('%', :q, '%'))")
-    List<Client> search(@Param("q") String q);
+    @Query("{ $or: [ " +
+           "{ 'userName': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'userEmail': { $regex: ?0, $options: 'i' } }, " +
+           "{ 'company': { $regex: ?0, $options: 'i' } } " +
+           "] }")
+    List<Client> search(String q);
 }

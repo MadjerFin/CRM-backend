@@ -15,29 +15,27 @@ public class SegmentService {
     private final SegmentRepository segmentRepo;
 
     public Segment create(SegmentRequest req, WtcUser operator) {
-        Segment s = Segment.builder()
+        if (segmentRepo.existsByName(req.getName()))
+            throw new RuntimeException("Segmento com este nome já existe");
+        return segmentRepo.save(Segment.builder()
             .name(req.getName())
             .description(req.getDescription())
-            .createdBy(operator)
-            .build();
-        return segmentRepo.save(s);
+            .createdById(operator.getId())
+            .build());
     }
 
-    public Segment update(Long id, SegmentRequest req) {
-        Segment s = segmentRepo.findById(id)
-            .orElseThrow(() -> new RuntimeException("Segmento não encontrado"));
+    public Segment update(String id, SegmentRequest req) {
+        Segment s = findById(id);
         s.setName(req.getName());
         s.setDescription(req.getDescription());
         return segmentRepo.save(s);
     }
 
-    public void delete(Long id) {
-        segmentRepo.deleteById(id);
-    }
+    public void delete(String id) { segmentRepo.deleteById(id); }
 
     public List<Segment> findAll() { return segmentRepo.findAll(); }
 
-    public Segment findById(Long id) {
+    public Segment findById(String id) {
         return segmentRepo.findById(id)
             .orElseThrow(() -> new RuntimeException("Segmento não encontrado"));
     }

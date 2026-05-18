@@ -1,40 +1,26 @@
 package com.wtc.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "WTC_AUDIT_LOGS")
+@Document(collection = "audit_logs")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class AuditLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_audit_logs_gen")
-    @SequenceGenerator(name = "seq_audit_logs_gen", sequenceName = "SEQ_AUDIT_LOGS", allocationSize = 1)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID")
-    private WtcUser user;
-
-    @Column(nullable = false, length = 100)
+    private String userId;
     private String action;
-
-    @Column(length = 100)
     private String entity;
-
-    @Column(name = "ENTITY_ID")
-    private Long entityId;
-
-    @Column(length = 4000)
+    private String entityId;
     private String details;
-
-    @Column(name = "IP_ADDRESS", length = 50)
     private String ipAddress;
 
-    @Column(name = "CREATED_AT", nullable = false, updatable = false)
+    @CreatedDate
     private LocalDateTime createdAt;
-
-    @PrePersist protected void onCreate() { createdAt = LocalDateTime.now(); }
 }

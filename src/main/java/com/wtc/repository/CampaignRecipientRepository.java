@@ -1,14 +1,14 @@
 package com.wtc.repository;
 
 import com.wtc.entity.CampaignRecipient;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CampaignRecipientRepository extends JpaRepository<CampaignRecipient, Long> {
-    List<CampaignRecipient> findByCampaignId(Long campaignId);
-    List<CampaignRecipient> findByClientId(Long clientId);
-    Optional<CampaignRecipient> findByCampaignIdAndClientId(Long campaignId, Long clientId);
+public interface CampaignRecipientRepository extends MongoRepository<CampaignRecipient, String> {
+    List<CampaignRecipient> findByCampaignId(String campaignId);
+    List<CampaignRecipient> findByClientId(String clientId);
+    Optional<CampaignRecipient> findByCampaignIdAndClientId(String campaignId, String clientId);
 }

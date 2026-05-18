@@ -21,6 +21,7 @@ public class CampaignService {
     private final CampaignRepository campaignRepo;
     private final SegmentRepository segmentRepo;
     private final ClientRepository clientRepo;
+    private final WtcUserRepository userRepo;
     private final CampaignRecipientRepository recipientRepo;
     private final FirebaseMessagingService firebase;
 
@@ -28,47 +29,43 @@ public class CampaignService {
         Segment segment = segmentRepo.findById(req.getSegmentId())
             .orElseThrow(() -> new RuntimeException("Segmento não encontrado"));
         Campaign c = Campaign.builder()
-            .title(req.getTitle()).body(req.getBody()).type(req.getType())
-            .segment(segment).createdBy(operator)
+            .title(req.getTitle()).body(req.getBody())
+            .type(req.getType() != null ? req.getType() : CampaignType.PROMO)
+            .segmentId(segment.getId()).segmentName(segment.getName())
+            .createdById(operator.getId())
             .deeplink(req.getDeeplink()).status(CampaignStatus.DRAFT)
             .build();
         return toResponse(campaignRepo.save(c));
     }
 
-    public CampaignResponse sendNow(Long campaignId) {
+    public CampaignResponse sendNow(String campaignId) {
         Campaign c = campaignRepo.findById(campaignId)
             .orElseThrow(() -> new RuntimeException("Campanha não encontrada"));
         if (c.getStatus() == CampaignStatus.SENT)
             throw new RuntimeException("Campanha já enviada");
 
-        List<Client> clients = clientRepo.findBySegmentId(c.getSegment().getId());
+        List<Client> clients = clientRepo.findBySegmentId(c.getSegmentId());
         List<String> tokens = clients.stream()
-            .map(cl -> cl.getUser().getFcmToken())
+            .map(cl -> userRepo.findById(cl.getUserId())
+                .map(WtcUser::getFcmToken).orElse(null))
             .filter(t -> t != null && !t.isBlank()).toList();
 
-        // Criar registros de destinatário
-        clients.forEach(cl -> {
-            CampaignRecipient rec = CampaignRecipient.builder()
-                .campaign(c).client(cl).status(RecipientStatus.PENDING).build();
-            recipientRepo.save(rec);
-        });
+        clients.forEach(cl -> recipientRepo.save(
+            CampaignRecipient.builder()
+                .campaignId(c.getId()).clientId(cl.getId())
+                .status(RecipientStatus.PENDING).build()));
 
-        // Enviar push
         Map<String, String> data = Map.of(
-            "campaignId", c.getId().toString(),
-            "type", c.getType().name(),
-            "deeplink", c.getDeeplink() != null ? c.getDeeplink() : ""
-        );
+            "campaignId", c.getId(), "type", c.getType().name(),
+            "deeplink", c.getDeeplink() != null ? c.getDeeplink() : "");
         firebase.sendToMultipleTokens(tokens, c.getTitle(), c.getBody(), data);
 
-        // Atualizar status
-        clients.forEach(cl -> {
+        clients.forEach(cl ->
             recipientRepo.findByCampaignIdAndClientId(c.getId(), cl.getId()).ifPresent(rec -> {
                 rec.setStatus(RecipientStatus.SENT);
                 rec.setSentAt(LocalDateTime.now());
                 recipientRepo.save(rec);
-            });
-        });
+            }));
 
         c.setStatus(CampaignStatus.SENT);
         c.setSentAt(LocalDateTime.now());
@@ -80,17 +77,17 @@ public class CampaignService {
         return campaignRepo.findAll().stream().map(this::toResponse).toList();
     }
 
-    public CampaignResponse findById(Long id) {
+    public CampaignResponse findById(String id) {
         return toResponse(campaignRepo.findById(id)
             .orElseThrow(() -> new RuntimeException("Campanha não encontrada")));
     }
 
     private CampaignResponse toResponse(Campaign c) {
-        CampaignResponse r = new CampaignResponse();
-        r.setId(c.getId()); r.setTitle(c.getTitle()); r.setBody(c.getBody());
-        r.setType(c.getType()); r.setStatus(c.getStatus()); r.setDeeplink(c.getDeeplink());
-        r.setSegmentName(c.getSegment().getName());
-        r.setSentAt(c.getSentAt()); r.setCreatedAt(c.getCreatedAt());
-        return r;
+        return CampaignResponse.builder()
+            .id(c.getId()).title(c.getTitle()).body(c.getBody())
+            .type(c.getType()).status(c.getStatus()).deeplink(c.getDeeplink())
+            .segmentName(c.getSegmentName())
+            .sentAt(c.getSentAt()).createdAt(c.getCreatedAt())
+            .build();
     }
 }

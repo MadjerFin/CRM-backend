@@ -1,32 +1,24 @@
 package com.wtc.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "WTC_ANNOTATIONS")
+@Document(collection = "annotations")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Annotation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_annotations_gen")
-    @SequenceGenerator(name = "seq_annotations_gen", sequenceName = "SEQ_ANNOTATIONS", allocationSize = 1)
-    private Long id;
+    private String id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLIENT_ID", nullable = false)
-    private Client client;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "OPERATOR_ID", nullable = false)
-    private WtcUser operator;
-
-    @Column(nullable = false, length = 2000)
+    private String clientId;
+    private String operatorId;
+    private String operatorName;
     private String content;
 
-    @Column(name = "CREATED_AT", nullable = false, updatable = false)
+    @CreatedDate
     private LocalDateTime createdAt;
-
-    @PrePersist protected void onCreate() { createdAt = LocalDateTime.now(); }
 }

@@ -19,23 +19,19 @@ public class AuditAspect {
 
     private final AuditLogRepository auditLogRepository;
 
-    @AfterReturning(
-        pointcut = "@annotation(auditable)",
-        returning = "result"
-    )
+    @AfterReturning(pointcut = "@annotation(auditable)", returning = "result")
     public void logAudit(JoinPoint jp, Auditable auditable, Object result) {
         try {
-            WtcUser user = null;
+            String userId = null;
             var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof WtcUser u) user = u;
+            if (auth != null && auth.getPrincipal() instanceof WtcUser u) userId = u.getId();
 
-            AuditLog log = AuditLog.builder()
-                .user(user)
+            auditLogRepository.save(AuditLog.builder()
+                .userId(userId)
                 .action(auditable.action())
                 .entity(auditable.entity())
                 .details("Method: " + jp.getSignature().getName())
-                .build();
-            auditLogRepository.save(log);
+                .build());
         } catch (Exception e) {
             log.warn("Falha ao registrar auditoria: {}", e.getMessage());
         }

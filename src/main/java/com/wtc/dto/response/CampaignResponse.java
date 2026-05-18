@@ -8,12 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class CampaignResponse {
-    private Long id;
+    private String id;
     private String title;
     private String body;
     private CampaignType type;

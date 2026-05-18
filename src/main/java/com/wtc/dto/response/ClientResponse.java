@@ -10,16 +10,13 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class ClientResponse {
-    private Long id;
-    private Long userId;
+    private String id;
+    private String userId;
     private String name;
     private String email;
-    private Long segmentId;
+    private String segmentId;
     private String segmentName;
     private String tags;
     private BigDecimal score;

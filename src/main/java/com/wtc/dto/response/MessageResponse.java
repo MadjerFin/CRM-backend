@@ -8,16 +8,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class MessageResponse {
-    private Long id;
-    private Long senderId;
+    private String id;
+    private String senderId;
     private String senderName;
-    private Long receiverId;
-    private Long segmentId;
+    private String receiverId;
+    private String segmentId;
     private String content;
     private MessageType type;
     private MessageStatus status;

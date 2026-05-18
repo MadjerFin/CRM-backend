@@ -28,14 +28,14 @@ public class AuditController {
 
     @GetMapping("/user/{userId}")
     @Operation(summary = "Logs de auditoria por usuário")
-    public ResponseEntity<ApiResponse<List<AuditLog>>> findByUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<List<AuditLog>>> findByUser(@PathVariable String userId) {
         return ResponseEntity.ok(ApiResponse.ok(auditLogRepo.findByUserIdOrderByCreatedAtDesc(userId)));
     }
 
     @GetMapping("/entity/{entity}/{entityId}")
     @Operation(summary = "Logs de auditoria por entidade")
     public ResponseEntity<ApiResponse<List<AuditLog>>> findByEntity(
-            @PathVariable String entity, @PathVariable Long entityId) {
+            @PathVariable String entity, @PathVariable String entityId) {
         return ResponseEntity.ok(ApiResponse.ok(
             auditLogRepo.findByEntityAndEntityIdOrderByCreatedAtDesc(entity, entityId)));
     }

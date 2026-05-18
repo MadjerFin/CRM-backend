@@ -42,7 +42,7 @@ public class AuthService {
         return new AuthResponse(token, user.getRole().name(), user.getId(), user.getName());
     }
 
-    public void updateFcmToken(Long userId, String fcmToken) {
+    public void updateFcmToken(String userId, String fcmToken) {
         WtcUser user = userRepo.findById(userId)
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
         user.setFcmToken(fcmToken);
