@@ -26,8 +26,19 @@ public class ClientService {
     public ClientResponse create(ClientRequest req) {
         WtcUser user = userRepo.findById(req.getUserId())
             .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        String segName = null;
+        if (req.getSegmentId() != null) {
+            segName = segmentRepo.findById(req.getSegmentId())
+                .map(Segment::getName).orElse(null);
+        }
+
         Client c = Client.builder()
-            .user(user)
+            .userId(user.getId())
+            .userName(user.getName())
+            .userEmail(user.getEmail())
+            .segmentId(req.getSegmentId())
+            .segmentName(segName)
             .tags(req.getTags())
             .score(req.getScore())
             .status(req.getStatus() != null ? req.getStatus() : ClientStatus.ACTIVE)
@@ -40,16 +51,16 @@ public class ClientService {
             .city(req.getCity())
             .state(req.getState())
             .build();
-        if (req.getSegmentId() != null)
-            c.setSegment(segmentRepo.findById(req.getSegmentId()).orElse(null));
-        return toClientResponse(clientRepo.save(c));
+        return toResponse(clientRepo.save(c));
     }
 
-    public ClientResponse update(Long id, ClientRequest req) {
+    public ClientResponse update(String id, ClientRequest req) {
         Client c = clientRepo.findById(id)
             .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
-        if (req.getSegmentId() != null)
-            c.setSegment(segmentRepo.findById(req.getSegmentId()).orElse(null));
+        if (req.getSegmentId() != null) {
+            c.setSegmentId(req.getSegmentId());
+            c.setSegmentName(segmentRepo.findById(req.getSegmentId()).map(Segment::getName).orElse(null));
+        }
         if (req.getTags()          != null) c.setTags(req.getTags());
         if (req.getScore()         != null) c.setScore(req.getScore());
         if (req.getStatus()        != null) c.setStatus(req.getStatus());
@@ -61,71 +72,78 @@ public class ClientService {
         if (req.getWebsite()       != null) c.setWebsite(req.getWebsite());
         if (req.getCity()          != null) c.setCity(req.getCity());
         if (req.getState()         != null) c.setState(req.getState());
-        return toClientResponse(clientRepo.save(c));
+        return toResponse(clientRepo.save(c));
     }
 
-    public List<ClientResponse> findWithFilters(ClientStatus status, Long segmentId, String tag) {
-        return clientRepo.findWithFilters(status, segmentId, tag)
-            .stream().map(this::toClientResponse).toList();
+    public List<ClientResponse> findWithFilters(ClientStatus status, String segmentId, String tag) {
+        return clientRepo.findAll().stream()
+            .filter(c -> status == null || c.getStatus() == status)
+            .filter(c -> segmentId == null || segmentId.equals(c.getSegmentId()))
+            .filter(c -> tag == null || (c.getTags() != null && c.getTags().toLowerCase().contains(tag.toLowerCase())))
+            .map(this::toResponse).toList();
     }
 
     public List<ClientResponse> search(String q) {
-        return clientRepo.search(q).stream().map(this::toClientResponse).toList();
+        return clientRepo.search(q).stream().map(this::toResponse).toList();
     }
 
-    public ClientResponse findByIdAsResponse(Long id) {
-        return toClientResponse(clientRepo.findById(id)
+    public ClientResponse findByIdAsResponse(String id) {
+        return toResponse(clientRepo.findById(id)
             .orElseThrow(() -> new RuntimeException("Cliente não encontrado")));
     }
 
-    public Client findById(Long id) {
+    public Client findById(String id) {
         return clientRepo.findById(id)
             .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
     }
 
-    public void addAnnotation(Long clientId, AnnotationRequest req, WtcUser operator) {
-        Client c = findById(clientId);
-        annotationRepo.save(
-            Annotation.builder().client(c).operator(operator).content(req.getContent()).build());
+    public void delete(String id) { clientRepo.deleteById(id); }
+
+    public void addAnnotation(String clientId, AnnotationRequest req, WtcUser operator) {
+        Annotation a = Annotation.builder()
+            .clientId(clientId)
+            .operatorId(operator.getId())
+            .operatorName(operator.getName())
+            .content(req.getContent())
+            .build();
+        annotationRepo.save(a);
     }
 
-    public Profile360Response getProfile360(Long clientId) {
+    public Profile360Response getProfile360(String clientId) {
         Client client = findById(clientId);
-        Long userId = client.getUser().getId();
 
         Profile360Response p = new Profile360Response();
-        p.setClient(toClientResponse(client));
+        p.setClient(toResponse(client));
 
-        p.setLastMessages(messageRepo.findConversation(userId).stream()
+        p.setLastMessages(messageRepo.findConversation(client.getUserId()).stream()
             .limit(10).map(this::toMessageResponse).toList());
 
         p.setLastCampaigns(campRecipRepo.findByClientId(clientId).stream()
             .limit(5).map(r -> {
                 var cr = new CampaignResponse();
-                cr.setId(r.getCampaign().getId());
-                cr.setTitle(r.getCampaign().getTitle());
-                cr.setStatus(r.getCampaign().getStatus());
-                cr.setSentAt(r.getCampaign().getSentAt());
+                cr.setId(r.getCampaignId());
+                cr.setStatus(r.getStatus() != null ? com.wtc.enums.CampaignStatus.SENT : null);
                 return cr;
             }).toList());
 
-        p.setOpenTasks(taskRepo.findByAssignedToIdAndStatus(userId, TaskStatus.OPEN)
+        p.setOpenTasks(taskRepo.findByAssignedToIdAndStatus(client.getUserId(), TaskStatus.OPEN)
             .stream().map(Task::getTitle).toList());
 
         p.setAnnotations(annotationRepo.findByClientIdOrderByCreatedAtDesc(clientId)
-            .stream().limit(5).map(a -> a.getOperator().getName() + ": " + a.getContent()).toList());
+            .stream().limit(5)
+            .map(a -> a.getOperatorName() + ": " + a.getContent()).toList());
 
         return p;
     }
 
-    public ClientResponse toClientResponse(Client c) {
+    public ClientResponse toResponse(Client c) {
         return ClientResponse.builder()
             .id(c.getId())
-            .userId(c.getUser().getId())
-            .name(c.getUser().getName())
-            .email(c.getUser().getEmail())
-            .segmentId(c.getSegment() != null ? c.getSegment().getId() : null)
-            .segmentName(c.getSegment() != null ? c.getSegment().getName() : null)
+            .userId(c.getUserId())
+            .name(c.getUserName())
+            .email(c.getUserEmail())
+            .segmentId(c.getSegmentId())
+            .segmentName(c.getSegmentName())
             .tags(c.getTags())
             .score(c.getScore())
             .status(c.getStatus())
@@ -142,15 +160,15 @@ public class ClientService {
     }
 
     private MessageResponse toMessageResponse(Message m) {
-        MessageResponse r = new MessageResponse();
-        r.setId(m.getId());
-        r.setSenderId(m.getSender().getId());
-        r.setSenderName(m.getSender().getName());
-        r.setReceiverId(m.getReceiver() != null ? m.getReceiver().getId() : null);
-        r.setContent(m.getContent());
-        r.setType(m.getType());
-        r.setStatus(m.getStatus());
-        r.setSentAt(m.getSentAt());
-        return r;
+        return MessageResponse.builder()
+            .id(m.getId())
+            .senderId(m.getSenderId())
+            .senderName(m.getSenderName())
+            .receiverId(m.getReceiverId())
+            .content(m.getContent())
+            .type(m.getType())
+            .status(m.getStatus())
+            .sentAt(m.getSentAt())
+            .build();
     }
 }

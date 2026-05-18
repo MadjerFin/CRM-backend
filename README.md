@@ -11,8 +11,8 @@ API REST desenvolvida em **Java Spring Boot** para gerenciamento de comunicaçã
 | Linguagem | Java 17 |
 | Framework | Spring Boot 3.3 |
 | Segurança | Spring Security + JWT (JJWT 0.12) |
-| Banco de Dados | Oracle Database (FIAP) |
-| ORM | Hibernate 6 / Spring Data JPA |
+| Banco de Dados | **MongoDB Atlas** (NoSQL — nuvem) |
+| ODM | Spring Data MongoDB |
 | Push Notifications | Firebase Admin SDK (FCM) |
 | Documentação | SpringDoc OpenAPI (Swagger UI) |
 | Build | Maven 3.9 |
@@ -49,15 +49,14 @@ src/main/java/com/wtc/
 - Oracle Database (ou acesso ao Oracle FIAP)
 - Conta Firebase com projeto configurado
 
-### Variáveis de ambiente
+### Banco de Dados — MongoDB Atlas
 
-Copie `.env.example` para `.env` e preencha:
+O projeto usa **MongoDB Atlas** (free tier). A connection string já está configurada em `application.properties`.
 
-```env
-SPRING_DATASOURCE_URL=jdbc:oracle:thin:@oracle.fiap.com.br:1521:ORCL
-SPRING_DATASOURCE_USERNAME=seu_usuario
-SPRING_DATASOURCE_PASSWORD=sua_senha
-JWT_SECRET=seu_secret_jwt
+Para usar seu próprio cluster, altere:
+```properties
+spring.data.mongodb.uri=mongodb+srv://USER:PASS@cluster.mongodb.net/wtc?appName=M0Free
+spring.data.mongodb.database=wtc
 ```
 
 ### Firebase
@@ -69,18 +68,12 @@ Salve como `src/main/resources/firebase-service-account.json`.
 
 ### Banco de Dados
 
-Execute os scripts na ordem no SQL Developer:
+MongoDB Atlas — sem scripts necessários. As coleções são criadas automaticamente ao rodar a aplicação.
 
-```sql
--- 1. Criar schema completo
-src/main/resources/schema.sql
-
--- 2. Adicionar campos empresariais (v2)
-src/main/resources/migration_v2.sql
-
--- 3. Popular com dados de exemplo
-src/main/resources/seed_data.sql
-```
+Collections criadas automaticamente:
+- `users` · `clients` · `segments` · `messages`
+- `campaigns` · `campaign_recipients` · `annotations`
+- `audit_logs` · `tasks`
 
 ---
 

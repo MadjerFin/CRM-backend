@@ -19,17 +19,17 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/crm/clients")
 @RequiredArgsConstructor
-@Tag(name = "CRM - Clientes", description = "Gestão de clientes corporativos: CRUD, perfil 360°, anotações e busca")
+@Tag(name = "CRM - Clientes", description = "Gestão de clientes corporativos")
 @SecurityRequirement(name = "bearerAuth")
 public class ClientController {
 
     private final ClientService clientService;
 
     @GetMapping
-    @Operation(summary = "Listar clientes com filtros (status, segmento, tag)")
+    @Operation(summary = "Listar clientes com filtros")
     public ResponseEntity<ApiResponse<List<ClientResponse>>> findAll(
             @RequestParam(required = false) ClientStatus status,
-            @RequestParam(required = false) Long segmentId,
+            @RequestParam(required = false) String segmentId,
             @RequestParam(required = false) String tag) {
         return ResponseEntity.ok(ApiResponse.ok(clientService.findWithFilters(status, segmentId, tag)));
     }
@@ -42,13 +42,13 @@ public class ClientController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Buscar cliente por ID")
-    public ResponseEntity<ApiResponse<ClientResponse>> findById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ClientResponse>> findById(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(clientService.findByIdAsResponse(id)));
     }
 
     @GetMapping("/{id}/profile360")
-    @Operation(summary = "Perfil 360° — dados, mensagens recentes, campanhas, tarefas e anotações")
-    public ResponseEntity<ApiResponse<Profile360Response>> profile360(@PathVariable Long id) {
+    @Operation(summary = "Perfil 360° do cliente")
+    public ResponseEntity<ApiResponse<Profile360Response>> profile360(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(clientService.getProfile360(id)));
     }
 
@@ -64,15 +64,23 @@ public class ClientController {
     @Operation(summary = "Atualizar dados CRM do cliente")
     @Auditable(action = "CLIENT_UPDATED", entity = "Client")
     public ResponseEntity<ApiResponse<ClientResponse>> update(
-            @PathVariable Long id, @RequestBody ClientRequest req) {
+            @PathVariable String id, @RequestBody ClientRequest req) {
         return ResponseEntity.ok(ApiResponse.ok(clientService.update(id, req)));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Remover cliente do CRM")
+    @Auditable(action = "CLIENT_DELETED", entity = "Client")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
+        clientService.delete(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @PostMapping("/{id}/annotations")
     @Operation(summary = "Adicionar anotação ao cliente")
     @Auditable(action = "ANNOTATION_ADDED", entity = "Client")
     public ResponseEntity<ApiResponse<Void>> addAnnotation(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestBody AnnotationRequest req,
             @AuthenticationPrincipal WtcUser operator) {
         clientService.addAnnotation(id, req, operator);
